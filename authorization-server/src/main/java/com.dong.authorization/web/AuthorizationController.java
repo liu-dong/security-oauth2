@@ -47,8 +47,7 @@ public class AuthorizationController {
         Set<String> scopesToApprove = new HashSet<>();
         Set<String> previouslyApprovedScopes = new HashSet<>();
         RegisteredClient registeredClient = this.registeredClientRepository.findByClientId(clientId);
-        OAuth2AuthorizationConsent currentAuthorizationConsent =
-                this.authorizationConsentService.findById(registeredClient.getId(), principal.getName());
+        OAuth2AuthorizationConsent currentAuthorizationConsent = this.authorizationConsentService.findById(registeredClient.getId(), principal.getName());
         Set<String> authorizedScopes;
         if (currentAuthorizationConsent != null) {
             authorizedScopes = currentAuthorizationConsent.getScopes();
