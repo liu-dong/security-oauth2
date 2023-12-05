@@ -23,6 +23,7 @@ import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationConsentService;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationCode;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
@@ -37,6 +38,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -48,9 +50,22 @@ import java.util.UUID;
 @EnableWebSecurity
 public class AuthorizationServerSecurityConfiguration {
 
+    /**
+     * 忽略路径
+     */
+    private static final String[] IGNORE_PATH = {""};
+
+    /**
+     * 配置端点的过滤器链
+     *
+     * @param http
+     * @return
+     * @throws Exception
+     */
     @Bean
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
+        // 配置默认的设置，忽略认证端点的csrf校验
         OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
         http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
                 // 开启OpenID Connect 1.0协议相关端点
@@ -60,12 +75,21 @@ public class AuthorizationServerSecurityConfiguration {
         return http.formLogin(Customizer.withDefaults()).build();
     }
 
+    /**
+     * 配置认证相关的过滤器链
+     *
+     * @param http
+     * @return
+     * @throws Exception
+     */
     @Bean
     @Order(2)
     public SecurityFilterChain standardSecurityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests((authorize) -> authorize
                         // 放行静态资源
-                        .antMatchers("/assets/**", "/webjars/**", "/login").permitAll()
+                        .antMatchers("/assets/**", "/webjars/**", "/login", "/favicon.ico").permitAll()
+                        // 无需认证即可访问
+                        .antMatchers(IGNORE_PATH).permitAll()
                         .anyRequest().authenticated()
                 )
                 // 指定登录页面
@@ -75,6 +99,12 @@ public class AuthorizationServerSecurityConfiguration {
         return http.build();
     }
 
+    /**
+     * 配置客户端Repository
+     *
+     * @param passwordEncoder
+     * @return
+     */
     @Bean
     public RegisteredClientRepository registeredClientRepository(PasswordEncoder passwordEncoder) {
         RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
@@ -109,6 +139,11 @@ public class AuthorizationServerSecurityConfiguration {
         return new InMemoryOAuth2AuthorizationConsentService();
     }
 
+    /**
+     * 配置jwk源，使用非对称加密，公开用于检索匹配指定选择器的JWK的方法
+     *
+     * @return JWKSource
+     */
     @Bean
     public JWKSource<SecurityContext> jwkSource(KeyPair keyPair) {
         RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
@@ -121,6 +156,12 @@ public class AuthorizationServerSecurityConfiguration {
         return new ImmutableJWKSet<>(jwkSet);
     }
 
+    /**
+     * 配置jwt解析器
+     *
+     * @param keyPair
+     * @return
+     */
     @Bean
     public JwtDecoder jwtDecoder(KeyPair keyPair) {
         return NimbusJwtDecoder.withPublicKey((RSAPublicKey) keyPair.getPublic()).build();
@@ -131,6 +172,12 @@ public class AuthorizationServerSecurityConfiguration {
         return AuthorizationServerSettings.builder().issuer("http://localhost:9000").build();
     }
 
+    /**
+     * 配置用户
+     *
+     * @param passwordEncoder
+     * @return
+     */
     @Bean
     public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
         UserDetails user = User.withUsername("SuperAdmin")
@@ -140,6 +187,11 @@ public class AuthorizationServerSecurityConfiguration {
         return new InMemoryUserDetailsManager(user);
     }
 
+    /**
+     * 生成RAS密钥对，提供给jwt
+     *
+     * @return
+     */
     @Bean
     @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     KeyPair generateRsaKey() {

@@ -95,19 +95,19 @@ public class AuthorizationController {
         static {
             scopeDescriptions.put(
                     OidcScopes.PROFILE,
-                    "This application will be able to read your profile information."
+                    "这个应用程序将能够读取您的个人资料信息。"
             );
             scopeDescriptions.put(
                     "message.read",
-                    "This application will be able to read your message."
+                    "这个应用程序将能够读取您的消息。"
             );
             scopeDescriptions.put(
                     "message.write",
-                    "This application will be able to add new messages. It will also be able to edit and delete existing messages."
+                    "此应用程序将能够添加新消息。它还可以编辑和删除现有的消息。"
             );
             scopeDescriptions.put(
-                    "other.scope",
-                    "This is another scope example of a scope description."
+                    "其他",
+                    "这是作用域描述的另一个作用域示例。"
             );
         }
 
