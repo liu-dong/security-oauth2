@@ -53,7 +53,7 @@ public class AuthorizationServerSecurityConfiguration {
     /**
      * 忽略路径
      */
-    private static final String[] IGNORE_PATH = {""};
+    private static final String[] IGNORE_PATH = {"/getCapt"};
 
     /**
      * 配置端点的过滤器链
